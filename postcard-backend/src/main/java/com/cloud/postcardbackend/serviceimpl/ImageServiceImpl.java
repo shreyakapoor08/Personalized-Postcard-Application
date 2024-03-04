@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.cloud.postcardbackend.entity.Image;
+import com.cloud.postcardbackend.exceptions.ResourceNotFoundException;
 import com.cloud.postcardbackend.repository.ImageRepository;
 import com.cloud.postcardbackend.service.ImageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,5 +36,14 @@ public class ImageServiceImpl implements ImageService {
         imageRepository.save(image);
 
         return "Image uploaded successfully! URL: " + imageUrl;
+    }
+
+    @Override
+    public String getImageUrlById(Long id) {
+        // Fetch image URL from repository based on ID
+        Image image = imageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with id: " + id));
+
+        return image.getUrl();
     }
 }
