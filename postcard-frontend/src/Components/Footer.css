@@ -1,0 +1,15 @@
+footer{
+    bottom: 0;
+    background-color: #142442;
+    color: #fff;
+    /* position: absolute; */
+    width: 100%;
+}
+
+footer p{
+    padding: 10px 0px;
+}
+
+footer .copyright{
+    text-align: center;
+}

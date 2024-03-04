@@ -1,0 +1,99 @@
+#team{
+    background-color: #fff;
+}
+
+.member{
+    margin-bottom: 80px;
+    text-align: center;
+}
+
+.member-name{
+    font-style: italic;
+}
+
+.member-img img{
+    height: 200px;
+    width: 200px;
+}
+
+section{
+    padding-bottom: 30px;
+}
+
+.section-title{
+    padding: 15px;
+    font-size: 1.7em;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.section-title span{
+    color: #5e7ce2;
+}
+
+
+.container{
+    max-width: 1100px;
+    margin: auto;
+    padding: 10px;
+}
+
+#services{
+    background-color: #efeeef;
+    text-align: center;
+    padding: 50px
+}
+
+#services h2{
+    padding: 20px;
+    font-size: 1.5em;
+}
+
+.service h3,
+.service p{
+    padding: 10px;
+    color: white;
+}
+
+.service h3{
+    font-size: 1.4em;
+    border-bottom: 1px solid #fff;
+    font-weight: bold;
+}
+
+  .service.one,
+  .service.two,
+  .service.three,
+  .service.four {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(../Images/testimoneals.jpg);
+  }
+  
+
+@media screen and (min-width:1000px){
+    .member{
+        width: 22.5%;
+        display: inline-block;
+        margin: 5%;
+    }
+    
+    .member-img img{
+        height: 200px;
+        width: 200px;
+    }
+    
+    .member-img{
+        margin-bottom: 20px;
+        object-fit: contain;
+    }
+
+    .service{
+        width: 40.5%;
+        display: inline-block;
+        margin-right: 5%;
+        margin-left: 3%;
+        margin-bottom: 5%;
+        height: 300px; 
+        overflow: auto; 
+    }
+
+}

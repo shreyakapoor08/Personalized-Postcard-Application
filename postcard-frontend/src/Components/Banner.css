@@ -1,0 +1,42 @@
+#intro {
+    min-height: 500px;
+    background-image: linear-gradient(rgba(255, 255, 255, 1), rgba(255, 255, 255, .5)), url(../Images/banner_postcard.webp);
+    background-size: cover;
+    background-position: top;
+    background-attachment: fixed;
+    position: relative;
+  }
+  
+  .intro-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  
+  .intro-text h1 {
+    font-size: 1.7em;
+    padding: 10px;
+    font-weight: bold;
+  }
+
+  .intro-text p {
+    padding: 20px;
+    font-style: italic;
+  }
+  
+  .intro-text h1 span {
+    color: #5e7ce2;
+    font-style: italic;
+  }
+  
+  .intro-text .call-to-action {
+    width: 60%;
+    margin: 20px auto;
+  }
+  
+  .intro-text .call-to-action .btn-bg {
+    width: 100%;
+  }
+  

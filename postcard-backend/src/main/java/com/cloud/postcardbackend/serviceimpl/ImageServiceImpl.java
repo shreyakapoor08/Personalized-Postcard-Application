@@ -1,0 +1,39 @@
+package com.cloud.postcardbackend.serviceimpl;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.cloud.postcardbackend.entity.Image;
+import com.cloud.postcardbackend.repository.ImageRepository;
+import com.cloud.postcardbackend.service.ImageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.util.UUID;
+
+@Service
+public class ImageServiceImpl implements ImageService {
+
+    @Autowired
+    private AmazonS3 amazonS3;
+
+    @Autowired
+    private ImageRepository imageRepository;
+
+    @Override
+    public String uploadImage(MultipartFile file) throws IOException {
+        String key = "images/" + UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+
+        amazonS3.putObject(new PutObjectRequest("cloud-media-upload", key, file.getInputStream(), null)
+                .withCannedAcl(CannedAccessControlList.PublicRead));
+
+        String imageUrl = amazonS3.getUrl("cloud-media-upload", key).toString();
+
+        Image image = new Image();
+        image.setUrl(imageUrl);
+        imageRepository.save(image);
+
+        return "Image uploaded successfully! URL: " + imageUrl;
+    }
+}
