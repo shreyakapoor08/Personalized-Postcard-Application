@@ -12,9 +12,6 @@
   .page-heading{
     margin-top: 170px;
   }
-
-  
-  
   
   .left, .right {
     align-items: center;
@@ -48,8 +45,3 @@
     left: 50%;
     transform: translate(-50%, -50%);
   }
-
-  .uploaded-voice{
-    width: 250px;
-  }
-  
