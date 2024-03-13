@@ -8,13 +8,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @RestController
+@CrossOrigin
 public class ImageController {
 
     @Autowired
     private ImageService imageService;
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+    public String uploadFile(@RequestParam("file-image") MultipartFile file) throws IOException {
         return imageService.uploadImage(file);
     }
 

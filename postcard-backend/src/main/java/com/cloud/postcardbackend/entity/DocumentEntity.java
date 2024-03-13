@@ -3,15 +3,15 @@ package com.cloud.postcardbackend.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "postcard-voicenote")
-public class VoiceNote {
+@Table(name = "postcard-documents")
+public class DocumentEntity {
 
     @Id
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "voicenote_url")
+    @Column(name = "document_url")
     private String url;
 
     public Long getId() {
