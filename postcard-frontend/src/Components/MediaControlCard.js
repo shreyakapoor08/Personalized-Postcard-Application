@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import './MediaControlCard.css';
-import MicIcon from '@mui/icons-material/Mic'; 
 import axios from 'axios';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 
 const MediaControlCard = () => {
   const [image, setImage] = useState(null);
@@ -41,31 +45,31 @@ const MediaControlCard = () => {
         console.error('Image or document not selected');
         return;
       }
-
-      const formDataImage = new FormData();
-      formDataImage.append('file-image', image);
-
-      const formDataDocument = new FormData();
-      formDataDocument.append('file-document', document);
-
+  
+      const formData = new FormData();
+      formData.append('file-document', document);
+      formData.append('file-image', image);
+  
       const config = {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       };
-
-      const responseImage = await axios.post('http://localhost:8080/upload', formDataImage, config);
-      const responseDocument = await axios.post('http://localhost:8080/upload-document', formDataDocument, config);
+  
+      const response = await axios.post('http://localhost:8080/upload-media', formData, config);
       
+      const postId = response.data;
+      console.log("post id is", postId);
       // Assuming the server returns the postId
-      setPostId(responseImage.data.postId);
-
+      setPostId(postId);
+  
       // Open the dialog
       setDialogOpen(true);
     } catch (error) {
-      console.error('Error uploading image or document:', error);
+      console.error('Error uploading media:', error);
     }
   };
+  
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
