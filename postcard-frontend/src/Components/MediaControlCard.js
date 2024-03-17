@@ -113,7 +113,7 @@ const MediaControlCard = () => {
           </label>
         </div>
       </div>
-      <button onClick={handleSubmit}>Submit</button>
+      <Button variant="contained" color="primary" onClick={handleSubmit} style={{ marginBottom: '20px' }}>Submit</Button>
       <Dialog open={dialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>Postcard Created</DialogTitle>
         <DialogContent>
