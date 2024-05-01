@@ -7,8 +7,8 @@ textract_client = boto3.client('textract')
 
 # Database configuration
 db_host = os.environ['DATABASE_HOST']
-db_user = 'Shreyakapoor98'
-db_password = 'Shreyakapoor98'
+db_user = 'username'
+db_password = 'password'
 db_name = os.environ['DATABASE_NAME']#'db_postcard'
 
 def lambda_handler(event, context):
