@@ -20,7 +20,7 @@
 I have developed a web application to facilitate the sharing of personalized postcards among users. The 
 primary objective of the application is to provide users with a platform where they can create customized 
 postcards online and share it with their loved ones.
-Key Features:
+### Key Features:
 1. Customized Postcard: Users can create personalized postcards by adding their own 
 handwritten messages in a document. Additionally, users have the option to upload photos to 
 include in their postcards to have a personal touch. 
