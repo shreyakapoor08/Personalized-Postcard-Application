@@ -7,10 +7,14 @@ const PostcardDetails = () => {
   const { postId } = useParams();
   const [postcardDetails, setPostcardDetails] = useState(null);
 
+  const backendHost = process.env.REACT_APP_BACKEND_HOST;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+  const backendUrl = `http://${backendHost}:${backendPort}`;
+
   useEffect(() => {
     const fetchPostcardDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:8080/media/${postId}`);
+        const response = await axios.get(`${backendUrl}/media/${postId}`);
         setPostcardDetails(response.data);
       } catch (error) {
         console.error('Error fetching postcard details:', error);

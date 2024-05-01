@@ -16,7 +16,7 @@ const Home = () => {
               <img src={shareImg} alt="" />
             </div>
             <div className="member-name">
-              <p>Easily dispatch within minutes</p>
+              <p>Easily share with them</p>
             </div>
             
           </div>
@@ -25,7 +25,7 @@ const Home = () => {
               <img src={audiototext} alt="" />
             </div>
             <div className="member-name">
-              <p>Personalised audio for them</p>
+              <p>Express your feelings</p>
             </div>
             
           </div>
@@ -62,7 +62,7 @@ const Home = () => {
           </div>
           <div className="service four">
             <h3>Michael Brown</h3>
-            <p>I was blown away by the audio feature of the postcard app! Being able to record a personal message in my own voice added a whole new dimension to my greetings. Whether it's singing happy birthday or sharing heartfelt words, the ability to send audio postcards makes every message feel more intimate and genuine. It's like sending a piece of myself along with the card, and my friends and family absolutely love it!.</p>
+            <p>I was blown away by the feature of the postcard app providing me ability to upload my handwritten document added a whole new dimension to my greetings. It makes every message feel more intimate and genuine. It's like sending a piece of myself along with the card, and my friends and family absolutely love it!.</p>
             
           </div>
         </div>

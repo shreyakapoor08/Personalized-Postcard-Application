@@ -1,0 +1,691 @@
+Description: |
+  Postcard Application
+  Resources 
+  1. VPC 
+  2. A pair of public and private subnets 
+  3. An internet gateway 
+  4. A NAT gateways 
+  5. Route Table and associations 
+  6. Security Groups
+  7. ECS Cluster
+  8. ECS Task Definition
+  9. ECS Service
+  10. Target Groups
+  11. Load Balancer application
+  12. Load balancer listener
+  13. Subnet Group
+  14. RDS
+  15. S3 Bucket
+  16. Lambda
+  17. SNS Topic
+
+
+Parameters:
+# ---------------- VPC Parameters --------------------------
+
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.0.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.1.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.0.2.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.0.3.0/24
+# ------------- VPC Parameters ------------------------------
+
+# ------------- ECS Cluster Parameters ----------------------
+  ECSClusterName:
+    Type: String
+    Default: postcard-cluster-cfn
+  ECSServiceName:
+    Type: String
+    Default: postcard
+  LoadBalancerName:
+    Type: String
+    Default: "postcard-lb"
+  FrontendECRImage:
+    Type: String
+    Default: 339712816963.dkr.ecr.us-east-1.amazonaws.com/postcard-frontend-repo
+  BackendECRImage:
+    Type: String
+    Default: 339712816963.dkr.ecr.us-east-1.amazonaws.com/postcard-backend-repo
+  LabRoleARN:
+    Type: String
+    Default: arn:aws:iam::339712816963:role/LabRole
+
+# ------------ DB Credentials 
+  Username:
+    NoEcho: 'true'
+    Description: Username for Aurora MySQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    Default: "Shreyakapoor98"
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  Password:
+    NoEcho: 'true'
+    Description: Password for Aurora MySQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    Default: "Shreyakapoor98"
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+
+# ----------------- SNS --------
+  SNSTopicEmail:
+    Type: String
+    Default: shreyakapoor98@gmail.com
+
+# ------------- S3 Bucket
+  BucketName:
+    Type: String
+    Default: cloud-media-upload
+
+# ------------- Lambda Function -----------------
+  LambdaFunctionName:
+    Type: String
+    Default: postcardDBFunction
+
+# -------------- Assets --------------------
+
+  AssetsBucket:
+    Type: String 
+    Default: postcard-ta-assets
+  LambdaCodeKey:
+    Type: String
+    Default: lambda/postcard_lambda_function.zip
+  LayerKey:
+    Type: String
+    Default: lambda/python.zip
+
+Resources:
+# -------------------- VPC Configurations -----------------------------------
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2
+# --------------- End VPC Configurations ------------------------------
+
+
+# --------------- ECS Configurations ----------------------------------
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ECSClusterName
+
+  FrontendReactTaskDefinition: 
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc 
+      Family: !Sub ${ECSServiceName}-frontend-cfn
+      TaskRoleArn: !Ref LabRoleARN
+      ExecutionRoleArn: !Ref LabRoleARN
+      RequiresCompatibilities: 
+        - FARGATE
+        - EC2
+      Cpu: 1024
+      Memory: 2048
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions: 
+        - 
+          Name: !Sub ${ECSServiceName}-frontend-container-cfn
+          Image: !Ref FrontendECRImage 
+          Cpu: 512
+          PortMappings: 
+            - 
+              ContainerPort: 3000
+              HostPort: 3000
+          Memory: 1024
+          Essential: true
+          Environment:
+          # Environment Variables
+            -
+              Name: "REACT_APP_BACKEND_HOST"
+              Value: !GetAtt LoadBalancerECS.DNSName 
+            -
+              Name: "REACT_APP_BACKEND_PORT"
+              Value: 8080
+            -
+              Name: "REACT_APP_FRONTEND_HOST"
+              Value: !GetAtt LoadBalancerECS.DNSName 
+            -
+              Name: "REACT_APP_FRONTEND_PORT"
+              Value: 80 # Request via Load Balancer
+
+
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: "/ecs/postcard-cfn"
+              awslogs-region: "us-east-1"
+              awslogs-stream-prefix: "ecs/postcard-frontend"
+
+  PostcardBackendTaskDefinition: 
+    Type: AWS::ECS::TaskDefinition
+    DependsOn: RDSDBInstance
+    Properties:
+      NetworkMode: awsvpc 
+      Family: "postcard-backend-cfn"
+      TaskRoleArn: !Ref LabRoleARN
+      ExecutionRoleArn: !Ref LabRoleARN
+      RequiresCompatibilities: 
+        - FARGATE
+        - EC2
+      Cpu: 1024
+      Memory: 2048
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions: 
+        - 
+          Name: "postcard-backend-container-cfn"
+          Image: !Ref BackendECRImage
+          Cpu: 512
+          PortMappings: 
+            - 
+              ContainerPort: 8080
+              HostPort: 8080
+          Memory: 1024
+          Essential: true
+          Environment:
+            -
+              Name: "FRONTEND_HOST"
+              Value: !GetAtt LoadBalancerECS.DNSName 
+            -
+              Name: "FRONTEND_PORT"
+              Value: 80
+            -
+              Name: "SNS_TOPIC"
+              Value: !Ref SnsTopic
+
+            -
+              Name: "DATABASE_HOSTNAME"
+              Value: !GetAtt RDSCluster.Endpoint.Address
+
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub "/ecs/${ECSServiceName}-cfn"
+              awslogs-region: "us-east-1"
+              awslogs-stream-prefix: !Sub "ecs/${ECSServiceName}-backend"
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host - frontend and backend
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+      #  Frontend Port mapping to 80
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          # Backend Port allow
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+
+  ECSSGBackend:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow request from loadbalancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+
+  ECSSGFrontend:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow request from loadbalancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+  RDSSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS Sg to allow connection
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+
+  LambdaSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda Security Group inside VPC
+      VpcId: !Ref VPC
+
+  FrontendService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: !Ref ECSCluster
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 0
+          Weight: 1
+      TaskDefinition: !Ref FrontendReactTaskDefinition
+      ServiceName: !Sub ${ECSServiceName}-frontend
+      SchedulingStrategy: REPLICA
+      DesiredCount: 1
+      LoadBalancers:
+        - ContainerName: !Sub ${ECSServiceName}-frontend-container-cfn
+          ContainerPort: 3000
+          TargetGroupArn: !Ref FrontendTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups: 
+            - !Ref ECSSGFrontend
+          Subnets: 
+            - !Ref PrivateSubnet1 
+            - !Ref PrivateSubnet2
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      DeploymentController:
+        Type: ECS
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags: []
+      EnableECSManagedTags: true
+    DependsOn:
+      - FrontendLisenter
+
+
+  BackendService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: !Ref ECSCluster
+      CapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Base: 0
+          Weight: 1
+      TaskDefinition: !Ref PostcardBackendTaskDefinition
+      ServiceName: !Sub ${ECSServiceName}-backend
+      SchedulingStrategy: REPLICA
+      DesiredCount: 1
+      LoadBalancers:
+        - ContainerName: !Sub ${ECSServiceName}-backend-container-cfn
+          ContainerPort: 8080
+          TargetGroupArn: !Ref BackendTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups: 
+            - !Ref ECSSGBackend
+          Subnets:
+            - !Ref PrivateSubnet1 
+            - !Ref PrivateSubnet2 
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      DeploymentController:
+        Type: ECS
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags: []
+      EnableECSManagedTags: true
+    DependsOn:
+      - BackendLisenter
+
+  LoadBalancerECS:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Type: application
+      Name: !Ref LoadBalancerName
+      SecurityGroups: 
+        - !Ref LoadBalancerSecurityGroup
+      Subnets: 
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+
+  BackendLisenter:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BackendTargetGroup
+      LoadBalancerArn: !Ref LoadBalancerECS
+      Port: '8080'
+      Protocol: HTTP
+
+  FrontendLisenter:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref FrontendTargetGroup
+      LoadBalancerArn: !Ref LoadBalancerECS
+      Port: '80'
+      Protocol: HTTP
+
+  FrontendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${ECSClusterName}-Frontend-1
+      VpcId: !Ref VPC
+      Port: 3000
+      Protocol: HTTP
+      TargetType: ip
+
+  BackendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${ECSClusterName}-backend
+      VpcId: !Ref VPC
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+
+
+# --------------------- End ECS Configuration ------------------------
+
+
+# ------------------- RDS Config -----------------------------
+
+  RDSCluster:
+    Type: 'AWS::RDS::DBCluster'
+    Properties:
+      DatabaseName: db_postcard
+      DBClusterIdentifier: !Sub ${ECSServiceName}-db-cfn
+      MasterUsername: !Ref Username
+      MasterUserPassword: !Ref Password
+      Engine: aurora-mysql
+      EngineVersion: 8.0.mysql_aurora.3.04.1
+      VpcSecurityGroupIds:
+        - !GetAtt RDSSG.GroupId 
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+
+
+  RDSDBInstance:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      Engine: aurora-mysql
+      DBClusterIdentifier:
+        Ref: RDSCluster
+      DBInstanceClass: db.t3.medium
+
+  RDSSubnetGroup: 
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties: 
+      DBSubnetGroupName: !Sub ${ECSServiceName}-private-subnet-grp
+      DBSubnetGroupDescription: Subnet group for RDS
+      SubnetIds: 
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+# ---------------------------
+
+
+# --------------- SNS Topic ----------------------
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: postcardSNSTopic
+  SnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref SNSTopicEmail
+      Protocol: email
+      TopicArn: !Ref 'SnsTopic'
+
+# -------------------- S3 Bucket -------------------
+
+  MyBucket:
+    Type: 'AWS::S3::Bucket'
+    DependsOn: PostcardDBLambda
+    Properties:
+      BucketName: !Ref BucketName # Parameter
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      # Public Acces via ACLs
+      AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Function: !GetAtt PostcardDBLambda.Arn
+
+# ------------ Lambda Function -------------------
+# DATABASE_NAME DATABASE_HOST
+  PostcardDBLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Handler: postcard_lambda_function.lambda_handler
+      Role: !Ref LabRoleARN
+      Code:
+        S3Bucket: !Ref AssetsBucket
+        S3Key: !Ref LambdaCodeKey
+      Runtime: python3.8
+      Timeout: 25
+      TracingConfig:
+        Mode: Active
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt LambdaSG.GroupId 
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+      Environment:
+        Variables:
+          DATABASE_HOST: !GetAtt RDSCluster.Endpoint.Address 
+          DATABASE_NAME: db_postcard
+      Layers:
+        - !Ref LambdaSQLLayer
+
+  S3InvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PostcardDBLambda
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::${BucketName}
+
+  LambdaSQLLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref AssetsBucket
+        S3Key: !Ref LayerKey
+      Description: Layer for MySQL 
+      LayerName: postcard-ta-layer
+
+Outputs:
+  ApplicationURL:
+    Description: LoadBalancer DNS Name 
+    Value: !GetAtt LoadBalancerECS.DNSName
+
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
+
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
+
+  RDSClusterEndpoint:
+    Description: The cluster endpoint for RDS
+    Value: !GetAtt RDSCluster.Endpoint.Address

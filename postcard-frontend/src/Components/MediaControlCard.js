@@ -6,6 +6,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 
 const MediaControlCard = () => {
   const [image, setImage] = useState(null);
@@ -14,6 +15,15 @@ const MediaControlCard = () => {
   const [documentUrl, setDocumentUrl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [postId, setPostId] = useState(null);
+  const [email, setEmail] = useState('');
+
+  const backendHost = process.env.REACT_APP_BACKEND_HOST;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+  const backendUrl = `http://${backendHost}:${backendPort}`;
+
+  const frontendHost = process.env.REACT_APP_FRONTEND_HOST;
+  const frontendPort = process.env.REACT_APP_FRONTEND_PORT;
+  const frontendUrl = `http://${frontendHost}:${frontendPort}`;
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -56,7 +66,7 @@ const MediaControlCard = () => {
         }
       };
   
-      const response = await axios.post('http://localhost:8080/upload-media', formData, config);
+      const response = await axios.post(`${backendUrl}/upload-media`, formData, config);
       
       const postId = response.data;
       console.log("post id is", postId);
@@ -69,10 +79,23 @@ const MediaControlCard = () => {
       console.error('Error uploading media:', error);
     }
   };
-  
+
+  const handleShare = async () => {
+    try {
+      const requestBody = { email, postId };
+      await axios.post(`${backendUrl}/send-email`, requestBody);
+      console.log('Email shared successfully');
+    } catch (error) {
+      console.error('Error sharing email:', error);
+    }
+  };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
+  };
+
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value);
   };
 
   return (
@@ -106,7 +129,7 @@ const MediaControlCard = () => {
               onChange={handleDocumentChange}
             />
             {documentUrl ? (
-              <span>Document Uploaded: {document.name}</span>
+              <span>Document Uploaded: <span>{document.name.length > 25 ? `${document.name.substring(0, 25)}...` : document.name}</span></span>
             ) : (
               <span>Click here to upload document</span>
             )}
@@ -118,9 +141,17 @@ const MediaControlCard = () => {
         <DialogTitle>Postcard Created</DialogTitle>
         <DialogContent>
           <p>Your postcard has been created successfully. Click the link below to view:</p>
-          <a href={`http://localhost:3000/postcard/${postId}`} target="_blank" rel="noopener noreferrer">View Postcard</a>
+          <a href={`${frontendUrl}/postcard/${postId}`} target="_blank" rel="noopener noreferrer">View Postcard</a>
+          <TextField
+            label="Enter Email"
+            variant="outlined"
+            value={email}
+            onChange={handleEmailChange}
+            style={{ marginTop: '20px', width: '100%' }}
+          />
         </DialogContent>
         <DialogActions>
+          <Button onClick={handleShare} color="primary">Share</Button>
           <Button onClick={handleCloseDialog}>Close</Button>
         </DialogActions>
       </Dialog>
