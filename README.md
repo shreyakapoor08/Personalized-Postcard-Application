@@ -33,10 +33,10 @@ recipients by generating a shareable link or by clicking on view postcard. This 
 sent via email or shared through other messaging platforms
 
 ## Services Used
-- COMPUTE: Elastic Container Service & Elastic Container Registry, Lambda
-- STORAGE : S3, Relational Database Service
-- NETWORK : Virtual Private Cloud
-- GENERAL :SNS, Textract, Elastic Load Balancing
+- *COMPUTE* : Elastic Container Service & Elastic Container Registry, Lambda
+- *STORAGE* : S3, Relational Database Service
+- *NETWORK* : Virtual Private Cloud
+- *GENERAL* : SNS, Textract, Elastic Load Balancing
 
 ## Architecture Overview
 <img width="517" alt="image" src="https://github.com/shreyakapoor08/Personalized-Postcard-Application/assets/31164665/0900540a-2643-4bc2-9ec0-105f7da37513">
